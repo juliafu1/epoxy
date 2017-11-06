@@ -1,8 +1,9 @@
 package com.airbnb.epoxy
 
 import com.squareup.javapoet.*
-import javax.lang.model.element.*
-import javax.lang.model.util.*
+import javax.lang.model.element.Modifier
+import javax.lang.model.util.Elements
+import javax.lang.model.util.Types
 
 /**
  * Used for writing the java code for models generated with @ModelView.
@@ -79,7 +80,7 @@ internal class ModelViewWriter(
                                 .addStatement(
                                         "\$L.\$L(\$L)",
                                         boundObjectParam.name,
-                                        defaultAttribute.viewSetterMethodName,
+                                        defaultAttribute.viewAttributeName,
                                         defaultAttribute.codeToSetDefault.value())
                                 .endControlFlow()
                     }
@@ -181,7 +182,7 @@ internal class ModelViewWriter(
                                 .addStatement(
                                         "\$L.\$L(\$L)",
                                         boundObjectParam.name,
-                                        defaultAttribute.viewSetterMethodName,
+                                        defaultAttribute.viewAttributeName,
                                         defaultAttribute.codeToSetDefault.value())
                                 .endControlFlow()
                     }
@@ -209,10 +210,12 @@ internal class ModelViewWriter(
             modelInfo.viewAttributes
                     .filter { it.resetWithNull }
                     .forEach {
+                        val expression = if (it.viewAttributeTypeName == ViewAttributeType.Field)
+                            "\$L.\$L = null" else "\$L.\$L(null)"
                         unbindBuilder.addStatement(
-                                "\$L.\$L(null)",
+                                expression,
                                 unbindParamName,
-                                it.viewSetterMethodName)
+                                it.viewAttributeName)
                     }
 
             addResetMethodsToBuilder(unbindBuilder,
@@ -237,9 +240,14 @@ internal class ModelViewWriter(
             boundObjectParam: ParameterSpec,
             viewAttribute: ViewAttributeInfo
     ): CodeBlock {
-        return CodeBlock.of("\$L.\$L(\$L);\n", boundObjectParam.name,
-                            viewAttribute.viewSetterMethodName,
-                            getValueToSetOnView(viewAttribute, boundObjectParam))
+        val expression = if (viewAttribute.viewAttributeTypeName == ViewAttributeType.Field)
+            "\$L.\$L=\$L;\n" else "\$L.\$L(\$L);\n"
+
+        return CodeBlock.of(expression,
+                boundObjectParam.name,
+                viewAttribute.viewAttributeName,
+                getValueToSetOnView(viewAttribute,
+                boundObjectParam));
     }
 
     private fun getValueToSetOnView(

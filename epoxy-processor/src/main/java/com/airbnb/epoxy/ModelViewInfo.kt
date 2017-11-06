@@ -153,11 +153,12 @@ internal class ModelViewInfo(
         return ClassName.get(packageName, className)
     }
 
-    fun addProp(propMethod: ExecutableElement) {
-        addAttribute(ViewAttributeInfo(this, propMethod, typeUtils, elements, errorLogger,
+    fun addProp(prop: Element) {
+        addAttribute(ViewAttributeInfo(this, prop, typeUtils, elements, errorLogger,
                                        resourceProcessor))
     }
 
+    //TODO juliafu handle the super class case
     fun addPropIfNotExists(propMethod: ExecutableElement) {
         addAttributeIfNotExists(
                 ViewAttributeInfo(this, propMethod, typeUtils, elements, errorLogger,
